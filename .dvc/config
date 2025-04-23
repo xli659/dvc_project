@@ -1,4 +1,6 @@
 [core]
-    remote = localremote
+    remote = s3remote
 ['remote "localremote"']
     url = /home/shawn/dvc_remote
+['remote "s3remote"']
+    url = s3://new-learning-test/dvc/

@@ -1,8 +1,23 @@
 pipeline {
     agent {
-        docker {
-            image 'python:3.12-slim'
-            args '-v $HOME/.cache:/root/.cache'
+        kubernetes {
+            yaml '''
+                apiVersion: v1
+                kind: Pod
+                spec:
+                  containers:
+                  - name: python
+                    image: python:3.12-slim
+                    command:
+                    - cat
+                    tty: true
+                    volumeMounts:
+                    - name: cache-volume
+                      mountPath: /root/.cache
+                  volumes:
+                  - name: cache-volume
+                    emptyDir: {}
+            '''
         }
     }
 
@@ -14,36 +29,44 @@ pipeline {
     stages {
         stage('Clone Repository') {
             steps {
-                // Clean workspace and clone the repository
-                sh 'rm -rf *'
-                sh 'git clone ${GIT_REPO} .'
+                container('python') {
+                    // Clean workspace and clone the repository
+                    sh 'rm -rf *'
+                    sh 'git clone ${GIT_REPO} .'
+                }
             }
         }
 
         stage('Install Dependencies') {
             steps {
-                sh '''
-                    python -m pip install --upgrade pip
-                    pip install pylint pytest fastapi uvicorn pydantic pytest-asyncio
-                '''
+                container('python') {
+                    sh '''
+                        python -m pip install --upgrade pip
+                        pip install pylint pytest fastapi uvicorn pydantic pytest-asyncio
+                    '''
+                }
             }
         }
 
         stage('Lint') {
             steps {
-                sh '''
-                    pylint --disable=C0111,C0103,C0301,W0621 *.py
-                    pylint --disable=C0111,C0103,C0301,W0621 test/*.py
-                '''
+                container('python') {
+                    sh '''
+                        pylint --disable=C0111,C0103,C0301,W0621 *.py
+                        pylint --disable=C0111,C0103,C0301,W0621 test/*.py
+                    '''
+                }
             }
         }
 
         stage('Test') {
             steps {
-                sh '''
-                    cd test
-                    pytest -v test_fastapi.py
-                '''
+                container('python') {
+                    sh '''
+                        cd test
+                        pytest -v test_fastapi.py
+                    '''
+                }
             }
         }
 

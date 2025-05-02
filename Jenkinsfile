@@ -11,6 +11,8 @@ pipeline {
                     command:
                     - cat
                     tty: true
+                    securityContext:
+                      privileged: true
                     volumeMounts:
                     - name: cache-volume
                       mountPath: /root/.cache
@@ -30,10 +32,10 @@ pipeline {
         stage('Setup') {
             steps {
                 container('python') {
-                    // Install git
+                    // Install git with sudo
                     sh '''
                         apt-get update
-                        apt-get install -y git
+                        sudo apt-get install -y git
                     '''
                 }
             }

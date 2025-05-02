@@ -27,6 +27,18 @@ pipeline {
     }
 
     stages {
+        stage('Setup') {
+            steps {
+                container('python') {
+                    // Install git
+                    sh '''
+                        apt-get update
+                        apt-get install -y git
+                    '''
+                }
+            }
+        }
+
         stage('Clone Repository') {
             steps {
                 container('python') {

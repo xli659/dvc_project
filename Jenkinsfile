@@ -5,6 +5,10 @@ pipeline {
                 apiVersion: v1
                 kind: Pod
                 spec:
+                  securityContext:
+                    runAsNonRoot: true
+                    seccompProfile:
+                      type: RuntimeDefault
                   containers:
                   - name: python
                     image: python:3.12-slim
@@ -12,11 +16,14 @@ pipeline {
                     - cat
                     tty: true
                     securityContext:
-                      runAsUser: 0
-                      runAsGroup: 0
+                      allowPrivilegeEscalation: false
+                      capabilities:
+                        drop: ["ALL"]
+                      runAsUser: 1007010000
+                      runAsGroup: 1007010000
                     volumeMounts:
                     - name: cache-volume
-                      mountPath: /root/.cache
+                      mountPath: /home/python/.cache
                   volumes:
                   - name: cache-volume
                     emptyDir: {}
@@ -27,16 +34,23 @@ pipeline {
     environment {
         DOCKER_IMAGE = 'fastapi_app'
         GIT_REPO = 'https://github.com/your-repo/dvc_project.git'  // Replace with actual repo URL
+        HOME = '/home/python'
     }
 
     stages {
         stage('Setup') {
             steps {
                 container('python') {
-                    // Install git
+                    // Create necessary directories with correct permissions
                     sh '''
-                        apt-get update
-                        apt-get install -y git
+                        mkdir -p /home/python/.cache
+                        mkdir -p /home/python/.local
+                        chown -R 1007010000:1007010000 /home/python
+                    '''
+                    // Install git without requiring root
+                    sh '''
+                        python -m pip install --user pip --upgrade
+                        python -m pip install --user git+https://github.com/gitpython-developers/GitPython.git
                     '''
                 }
             }
@@ -47,7 +61,7 @@ pipeline {
                 container('python') {
                     // Clean workspace and clone the repository
                     sh 'rm -rf *'
-                    sh 'git clone ${GIT_REPO} .'
+                    git url: env.GIT_REPO
                 }
             }
         }
@@ -56,8 +70,7 @@ pipeline {
             steps {
                 container('python') {
                     sh '''
-                        python -m pip install --upgrade pip
-                        pip install pylint pytest fastapi uvicorn pydantic pytest-asyncio
+                        python -m pip install --user pylint pytest fastapi uvicorn pydantic pytest-asyncio
                     '''
                 }
             }
@@ -67,6 +80,7 @@ pipeline {
             steps {
                 container('python') {
                     sh '''
+                        export PATH=$PATH:/home/python/.local/bin
                         pylint --disable=C0111,C0103,C0301,W0621 *.py
                         pylint --disable=C0111,C0103,C0301,W0621 test/*.py
                     '''
@@ -78,6 +92,7 @@ pipeline {
             steps {
                 container('python') {
                     sh '''
+                        export PATH=$PATH:/home/python/.local/bin
                         cd test
                         pytest -v test_fastapi.py
                     '''
@@ -86,7 +101,7 @@ pipeline {
         }
 
         stage('Build Docker Image') {
-            agent any  // Switch back to Jenkins agent for Docker operations
+            agent any
             steps {
                 script {
                     // Build the Docker image

@@ -15,3 +15,13 @@ stages:
     - y.csv
     params:
     - C
+    metrics:
+    - metrics.json
+  validation:
+    cmd: python validation.py
+    deps:
+    - model.pkl
+    - test_dataset.csv
+    - validation.py
+    metrics:
+    - validation_metrics.json

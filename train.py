@@ -22,3 +22,11 @@ lr.fit(X_train.reshape(-1, 1), y_train)
 preds = lr.predict(X_test.reshape(-1, 1))
 f1 = f1_score(y_test, preds)
 print(f"F1 score: {f1:.4f}")
+#save this print to metrics.json
+import json
+with open("metrics.json", "w") as f:
+    json.dump({"f1": f1}, f)
+#save model to model.pkl
+import pickle
+with open("model.pkl", "wb") as f:
+    pickle.dump(lr, f)

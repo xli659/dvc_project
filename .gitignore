@@ -3,3 +3,6 @@
 /y.csv
 /model.pkl
 /metrics.json
+/fake_data.csv
+/metrics.yaml
+/validation_metrics.json

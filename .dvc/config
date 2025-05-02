@@ -1,5 +1,6 @@
 [core]
     remote = s3remote
+    autostage = true
 ['remote "localremote"']
     url = /home/shawn/dvc_remote
 ['remote "s3remote"']

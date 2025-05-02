@@ -5,8 +5,8 @@ stages:
     deps:
     - path: fake_data.csv
       hash: md5
-      md5: d555947986fee588b7495fcdbee9f4bc
-      size: 91
+      md5: d49f1287de21a0ba8567618bfff0902e
+      size: 101
     - path: prepare.py
       hash: md5
       md5: b42d33f786c13fa61ae607868f30453f
@@ -14,27 +14,52 @@ stages:
     outs:
     - path: X.csv
       hash: md5
-      md5: 7d590865f797d0e66307c84bcbeb5f20
-      size: 475
+      md5: 63c5a457a40d8a89307b0f84bb57d716
+      size: 525
     - path: y.csv
       hash: md5
-      md5: 8870354405a58d988cee938d17b8b147
-      size: 475
+      md5: e93e22313a658c7b1617854de0bb668b
+      size: 525
   train:
     cmd: python ./train.py
     deps:
     - path: X.csv
       hash: md5
-      md5: 7d590865f797d0e66307c84bcbeb5f20
-      size: 475
+      md5: 63c5a457a40d8a89307b0f84bb57d716
+      size: 525
     - path: train.py
       hash: md5
-      md5: 1a5acaf48602fed63844ed3f93966325
-      size: 636
+      md5: 7fd8756fbe19c2dba09d393a1ac0fe37
+      size: 845
     - path: y.csv
       hash: md5
-      md5: 8870354405a58d988cee938d17b8b147
-      size: 475
+      md5: e93e22313a658c7b1617854de0bb668b
+      size: 525
     params:
       params.yaml:
-        C: 1.0
+        C: 6
+    outs:
+    - path: metrics.json
+      hash: md5
+      md5: aa3b60e636a3a7c3293fd8c51a581ddf
+      size: 11
+  validation:
+    cmd: python validation.py
+    deps:
+    - path: model.pkl
+      hash: md5
+      md5: 7ff5b9918ea7b4a17400818657eb9d27
+      size: 746
+    - path: test_dataset.csv
+      hash: md5
+      md5: f5657a0fe3386078d90034770faebde1
+      size: 74
+    - path: validation.py
+      hash: md5
+      md5: 07e4f30994daab5d94517bc85b3ecc00
+      size: 589
+    outs:
+    - path: validation_metrics.json
+      hash: md5
+      md5: 466969ad84d9c6d80e6331bf343ce9b5
+      size: 11

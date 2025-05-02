@@ -23,7 +23,7 @@ pipeline {
                       runAsGroup: 1007010000
                     volumeMounts:
                     - name: cache-volume
-                      mountPath: /home/python/.cache
+                      mountPath: /workspace/.cache
                   volumes:
                   - name: cache-volume
                     emptyDir: {}
@@ -33,24 +33,26 @@ pipeline {
 
     environment {
         DOCKER_IMAGE = 'fastapi_app'
-        GIT_REPO = 'https://github.com/your-repo/dvc_project.git'  // Replace with actual repo URL
-        HOME = '/home/python'
+        GIT_REPO = 'https://github.com/your-repo/dvc_project.git'
+        PYTHONUSERBASE = '${WORKSPACE}/.local'
+        PATH = '${WORKSPACE}/.local/bin:${PATH}'
+        PIP_CACHE_DIR = '/workspace/.cache/pip'
     }
 
     stages {
         stage('Setup') {
             steps {
                 container('python') {
-                    // Create necessary directories with correct permissions
+                    // Create local directories in workspace
                     sh '''
-                        mkdir -p /home/python/.cache
-                        mkdir -p /home/python/.local
-                        chown -R 1007010000:1007010000 /home/python
+                        mkdir -p ${WORKSPACE}/.local/bin
+                        mkdir -p ${WORKSPACE}/.cache/pip
                     '''
-                    // Install git without requiring root
+                    
+                    // Install dependencies using local paths
                     sh '''
-                        python -m pip install --user pip --upgrade
-                        python -m pip install --user git+https://github.com/gitpython-developers/GitPython.git
+                        python -m pip install --user --cache-dir=${PIP_CACHE_DIR} pip --upgrade
+                        python -m pip install --user --cache-dir=${PIP_CACHE_DIR} gitpython
                     '''
                 }
             }
@@ -70,7 +72,7 @@ pipeline {
             steps {
                 container('python') {
                     sh '''
-                        python -m pip install --user pylint pytest fastapi uvicorn pydantic pytest-asyncio
+                        python -m pip install --user --cache-dir=${PIP_CACHE_DIR} pylint pytest fastapi uvicorn pydantic pytest-asyncio
                     '''
                 }
             }
@@ -80,7 +82,6 @@ pipeline {
             steps {
                 container('python') {
                     sh '''
-                        export PATH=$PATH:/home/python/.local/bin
                         pylint --disable=C0111,C0103,C0301,W0621 *.py
                         pylint --disable=C0111,C0103,C0301,W0621 test/*.py
                     '''
@@ -92,7 +93,6 @@ pipeline {
             steps {
                 container('python') {
                     sh '''
-                        export PATH=$PATH:/home/python/.local/bin
                         cd test
                         pytest -v test_fastapi.py
                     '''

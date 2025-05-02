@@ -1,11 +1,25 @@
 pipeline {
-    agent any
+    agent {
+        docker {
+            image 'python:3.12-slim'
+            args '-v $HOME/.cache:/root/.cache'
+        }
+    }
 
     environment {
         DOCKER_IMAGE = 'fastapi_app'
+        GIT_REPO = 'https://github.com/your-repo/dvc_project.git'  // Replace with actual repo URL
     }
 
     stages {
+        stage('Clone Repository') {
+            steps {
+                // Clean workspace and clone the repository
+                sh 'rm -rf *'
+                sh 'git clone ${GIT_REPO} .'
+            }
+        }
+
         stage('Install Dependencies') {
             steps {
                 sh '''
@@ -34,6 +48,7 @@ pipeline {
         }
 
         stage('Build Docker Image') {
+            agent any  // Switch back to Jenkins agent for Docker operations
             steps {
                 script {
                     // Build the Docker image

@@ -11,9 +11,11 @@ pipeline {
                       type: RuntimeDefault
                   containers:
                   - name: python
-                    image: python:3.12-slim
+                    image: python:3.12
                     command:
-                    - cat
+                      - /bin/sh
+                      - -c
+                      - "while true; do sleep 30; done;"
                     tty: true
                     securityContext:
                       allowPrivilegeEscalation: false

@@ -21,11 +21,12 @@ pipeline {
                         drop: ["ALL"]
                       runAsUser: 1007010000
                       runAsGroup: 1007010000
+                    workingDir: /home/jenkins/agent
                     volumeMounts:
-                    - name: cache-volume
-                      mountPath: /workspace/.cache
+                    - name: workspace-volume
+                      mountPath: /home/jenkins/agent
                   volumes:
-                  - name: cache-volume
+                  - name: workspace-volume
                     emptyDir: {}
             '''
         }
@@ -34,25 +35,20 @@ pipeline {
     environment {
         DOCKER_IMAGE = 'fastapi_app'
         GIT_REPO = 'https://github.com/your-repo/dvc_project.git'
-        PYTHONUSERBASE = '${WORKSPACE}/.local'
-        PATH = '${WORKSPACE}/.local/bin:${PATH}'
-        PIP_CACHE_DIR = '/workspace/.cache/pip'
+        PYTHONUSERBASE = '/home/jenkins/agent/.local'
+        PATH = '/home/jenkins/agent/.local/bin:${PATH}'
+        PIP_CACHE_DIR = '/home/jenkins/agent/.cache/pip'
     }
 
     stages {
-        stage('Setup') {
+        stage('Setup Python Environment') {
             steps {
                 container('python') {
-                    // Create local directories in workspace
                     sh '''
-                        mkdir -p ${WORKSPACE}/.local/bin
-                        mkdir -p ${WORKSPACE}/.cache/pip
-                    '''
-                    
-                    // Install dependencies using local paths
-                    sh '''
-                        python -m pip install --user --cache-dir=${PIP_CACHE_DIR} pip --upgrade
-                        python -m pip install --user --cache-dir=${PIP_CACHE_DIR} gitpython
+                        mkdir -p /home/jenkins/agent/.local/bin
+                        mkdir -p /home/jenkins/agent/.cache/pip
+                        python -m pip install --user pip --upgrade
+                        python -m pip install --user gitpython
                     '''
                 }
             }
@@ -72,7 +68,7 @@ pipeline {
             steps {
                 container('python') {
                     sh '''
-                        python -m pip install --user --cache-dir=${PIP_CACHE_DIR} pylint pytest fastapi uvicorn pydantic pytest-asyncio
+                        python -m pip install --user pylint pytest fastapi uvicorn pydantic pytest-asyncio
                     '''
                 }
             }
@@ -82,6 +78,7 @@ pipeline {
             steps {
                 container('python') {
                     sh '''
+                        export PATH=/home/jenkins/agent/.local/bin:$PATH
                         pylint --disable=C0111,C0103,C0301,W0621 *.py
                         pylint --disable=C0111,C0103,C0301,W0621 test/*.py
                     '''
@@ -93,6 +90,7 @@ pipeline {
             steps {
                 container('python') {
                     sh '''
+                        export PATH=/home/jenkins/agent/.local/bin:$PATH
                         cd test
                         pytest -v test_fastapi.py
                     '''
@@ -114,18 +112,44 @@ pipeline {
     }
 
     post {
+        always {
+            script {
+                // Clean up Docker images
+                sh '''
+                    docker image prune -f
+                    docker images -q -f dangling=true | xargs -r docker rmi
+                '''
+                
+                // Clean up Python container and workspace
+                container('python') {
+                    sh '''
+                        rm -rf /home/jenkins/agent/.local/*
+                        rm -rf /home/jenkins/agent/.cache/*
+                    '''
+                }
+                
+                // Clean up the pod and ensure container removal
+                sh '''
+                    # Get the pod name
+                    POD_NAME=$(kubectl get pods -n shawnalexnew-dev -l jenkins=slave --no-headers -o custom-columns=":metadata.name" | grep pipeline-)
+                    
+                    if [ ! -z "$POD_NAME" ]; then
+                        # Force delete the pod to ensure immediate cleanup
+                        kubectl delete pod $POD_NAME -n shawnalexnew-dev --force --grace-period=0 || true
+                        
+                        # Wait for pod deletion
+                        kubectl wait --for=delete pod/$POD_NAME -n shawnalexnew-dev --timeout=30s || true
+                    fi
+                '''
+            }
+            
+            cleanWs() // Clean workspace after pipeline
+        }
         success {
             echo 'Pipeline completed successfully!'
         }
         failure {
             echo 'Pipeline failed!'
-        }
-        always {
-            // Clean up old Docker images to save space
-            sh '''
-                docker image prune -f
-                docker images -q -f dangling=true | xargs -r docker rmi
-            '''
         }
     }
 }

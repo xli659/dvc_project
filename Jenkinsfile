@@ -26,7 +26,7 @@ spec:
         git branch: 'main', url: 'https://github.com/xli659/dvc_project.git'
       }
     }
-        stage('Test') {
+    stage('Test') {
       steps {
         container('python') {
           sh '''
@@ -43,6 +43,16 @@ spec:
         container('oc') {
           sh '''
             oc start-build my-python-app --from-dir=. --wait
+          '''
+        }
+      }
+    }
+    stage('Build and Deploy with OpenShift') {
+      steps {
+        container('oc') {
+          sh '''
+            oc new-app --name=my-python-app https://github.com/xli659/dvc_project.git || true
+            oc rollout status dc/my-python-app
           '''
         }
       }

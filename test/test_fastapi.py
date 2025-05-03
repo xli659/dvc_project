@@ -10,7 +10,7 @@ from fastapi_test import app
 client = TestClient(app)
 
 def test_api_locally_get_root():
-    r = client.get("/")
+    r = client.get("/test")
     assert r.status_code == 200
 
 def test_say_hello_with_slash():

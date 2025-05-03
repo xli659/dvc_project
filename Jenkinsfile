@@ -42,7 +42,7 @@ spec:
       steps {
         container('oc') {
           sh '''
-            oc new-app --name=my-python-app https://github.com/xli659/dvc_project.git || true
+            oc new-app --name=my-python-app .
             oc rollout status dc/my-python-app
           '''
         }

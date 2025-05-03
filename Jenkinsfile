@@ -23,7 +23,7 @@ spec:
   stages {
     stage('Clone') {
       steps {
-        git 'https://github.com/xli659/dvc_project.git'
+        git branch: 'main', url: 'https://github.com/xli659/dvc_project.git'
       }
     }
     stage('Lint') {

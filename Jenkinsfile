@@ -30,6 +30,7 @@ spec:
       steps {
         container('python') {
           sh '''
+            export HOME=/home/jenkins/agent
             pip install --upgrade pip
             pip install flake8
             flake8 .
@@ -41,6 +42,7 @@ spec:
       steps {
         container('python') {
           sh '''
+            export HOME=/home/jenkins/agent
             pip install pytest fastapi uvicorn pydantic pytest-asyncio
             pytest
           '''

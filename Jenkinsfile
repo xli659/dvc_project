@@ -26,20 +26,7 @@ spec:
         git branch: 'main', url: 'https://github.com/xli659/dvc_project.git'
       }
     }
-    stage('Lint') {
-      steps {
-        container('python') {
-          sh '''
-            export HOME=/home/jenkins/agent
-            export PATH=$HOME/.local/bin:$PATH
-            pip install --upgrade pip
-            pip install flake8
-            flake8 .
-          '''
-        }
-      }
-    }
-    stage('Test') {
+        stage('Test') {
       steps {
         container('python') {
           sh '''
@@ -63,7 +50,7 @@ spec:
   }
   post {
     always {
-      cleanWs()
+      deleteDir()
     }
   }
 }

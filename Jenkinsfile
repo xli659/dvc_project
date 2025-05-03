@@ -32,7 +32,7 @@ spec:
           sh '''
             export HOME=/home/jenkins/agent
             export PATH=$HOME/.local/bin:$PATH
-            pip install pytest fastapi uvicorn pydantic pytest-asyncio
+            pip install pytest fastapi uvicorn pydantic pytest-asyncio httpx
             pytest
           '''
         }

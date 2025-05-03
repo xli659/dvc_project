@@ -38,15 +38,6 @@ spec:
         }
       }
     }
-    stage('Build Image') {
-      steps {
-        container('oc') {
-          sh '''
-            oc start-build my-python-app --from-dir=. --wait
-          '''
-        }
-      }
-    }
     stage('Build and Deploy with OpenShift') {
       steps {
         container('oc') {

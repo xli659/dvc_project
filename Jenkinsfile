@@ -42,8 +42,7 @@ spec:
       steps {
         container('oc') {
           sh '''
-            yum install -y git || true
-            oc new-app --name=my-python-app . || true
+            oc new-app --name=my-python-app https://github.com/xli659/dvc_project.git || true
             oc rollout status dc/my-python-app
           '''
         }
